@@ -1,3 +1,6 @@
+#Ignore all the files ending with ~
+*/*~
+
 # Ignore all executables main
 */main
 
