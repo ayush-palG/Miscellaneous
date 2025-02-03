@@ -13,56 +13,47 @@ int get_text_length(const char* text)
   return counter;
 }
 
-char* append_char_to_str(char* str, char ch)
+Frequency* init_frequency(void)
 {
-  int str_length = get_text_length(str);
+  Frequency* freq = (Frequency*) malloc(256 * sizeof(Frequency));
 
-  char* str_result = (char*) malloc((str_length + 1) * sizeof(char));
+  for (size_t i = 0; i < 256; ++i) {
+    freq[i].ch = (char) i;
+    freq[i].count = 0;
+  }
 
-  int index = 0;
-  while (str[index] != 0) str_result[index++] = str[index];
-  str_result[index++] = ch;
-  str_result[index] = 0;
-
-  free(str);
-  return str_result;
+  return freq;
 }
 
-int is_char_in_string(const char* str, const char ch)
+Frequency* get_frequency(const char* text)
 {
-  for (int i = 0; str[i] != 0; ++i) {
-    if (str[i] == ch) {
-      return 1;
+  Frequency* freq = init_frequency();
+  int text_length = get_text_length(text);
+  
+  for (size_t i = 0; i < text_length; ++i) {
+    freq[(int) text[i]].count += 1;
+  }
+
+  return freq;
+}
+
+void print_frequency(Frequency* freq)
+{
+  for (size_t i = 0; i < 256; ++i) {
+    if (freq[i].count > 0) {
+      printf("%zu (%c) -> %d\n", i, (char)i, freq[i].count);
     }
   }
-
-  return 0;
 }
 
-char* get_unique_chars(const char* text)
+void get_huffman_tree(const char* text)
 {
-  char* str = (char*) malloc(sizeof(char));
-  int text_length = get_text_length(text);
-
-  for (int i = 0; i < text_length; ++i) {
-    if (!is_char_in_string(str, text[i])) {
-      str = append_char_to_str(str, text[i]);
-    }
-  }
-
-  printf("%s", str);
-  return str;
+  if (get_text_length(text) == 0) return;
+  Frequency* freq = get_frequency(text);
+  print_frequency(freq);
 }
 
-int chars_in_str(const char* text, const char ch)
+int main(void)
 {
-  int text_length = get_text_length(text);
-
-  int counter = 0;
-  for (int i = 0; i < text_length; ++i) {
-    if (text[i] == ch) counter++;
-  }
-
-  return counter;
+  get_huffman_tree("asdasdssss");
 }
-
