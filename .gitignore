@@ -1,0 +1,5 @@
+# Ignore all executables main
+*/main
+
+# Ignore the Bitmap file(s) in bitmap folder
+bitmap/*.bmp
