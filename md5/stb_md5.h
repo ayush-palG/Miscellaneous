@@ -133,8 +133,8 @@ const char *get_message_digest_from_file(FILE *file)
   change_endian(&c0);
   change_endian(&d0);
 
-  char *digest_str = (char *) malloc(sizeof(char) * DIGEST_SIZE * 2);
-  sprintf(digest_str, "%x%x%x%x", a0, b0, c0, d0);
+  char *digest_str = (char *) malloc(sizeof(char) * DIGEST_SIZE * 4);
+  sprintf(digest_str, "%08x%08x%08x%08x", a0, b0, c0, d0);
   return digest_str;
 }
 
@@ -179,8 +179,8 @@ const char *get_message_digest_from_memory(const char *padded_input_str, uint64_
   change_endian(&c0);
   change_endian(&d0);
 
-  char *digest_str = (char *) malloc(sizeof(char) * DIGEST_SIZE * 2);
-  sprintf(digest_str, "%x%x%x%x", a0, b0, c0, d0);
+  char *digest_str = (char *) malloc(sizeof(char) * DIGEST_SIZE * 4);
+  sprintf(digest_str, "%08x%08x%08x%08x", a0, b0, c0, d0);
   return digest_str;
 }
 
@@ -285,7 +285,6 @@ const char *write_padded_output_to_memory(const char *input_str)
   str_length *= 8;
   memcpy(&padded_input_str[padded_input_size-8], &str_length, 8);
 
-  // for (size_t i = 0; i < padded_input_size; ++i) printf("%zu: %d\n", i, (uint8_t) padded_input_str[i]);
   return padded_input_str;
 }
 
