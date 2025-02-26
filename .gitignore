@@ -6,3 +6,8 @@
 
 # Ignore the Bitmap file(s) in bitmap folder
 bitmap/*.bmp
+
+# Ignore the input and msg files in md5
+md5/input
+md5/msg
+md5/md5
