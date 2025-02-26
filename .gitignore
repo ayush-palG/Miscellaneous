@@ -9,5 +9,5 @@ bitmap/*.bmp
 
 # Ignore the input and msg files in md5
 md5/input
-md5/msg
+md5/padded_input
 md5/md5

@@ -1,12 +1,20 @@
 #ifndef MD5_
 #define MD5_
 
-uint8_t shift_amount[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <stdint.h>
+
+#define DIGEST_SIZE 16
+
+const uint8_t shift_amount[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
 			    5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
 			    4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
 			    6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
 
-uint32_t key_constant[] = {0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
+const uint32_t key_constant[] = {0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
 			   0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
 			   0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
 			   0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
@@ -22,18 +30,27 @@ uint32_t key_constant[] = {0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
 			   0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
 			   0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
 			   0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391};
-  
+
+uint32_t a0 = 0x67452301;
+uint32_t b0 = 0xefcdab89;
+uint32_t c0 = 0x98badcfe;
+uint32_t d0 = 0x10325476;
+
 uint32_t get_non_linear_func(uint32_t b, uint32_t c, uint32_t d, size_t i);
 size_t get_current_index(size_t i);
 uint32_t left_rotate(uint32_t func, size_t rotation_count);
-void change_endian(uint32_t *hex_input);
+
 void swap_uint8(uint8_t *a, uint8_t *b);
 void reverse_uint8(uint8_t *arr, size_t arr_size);
+void change_endian(uint32_t *hex_input);
+
+const char *get_message_digest(FILE *file);
+const char *md5(const char *file_path);
 
 uint64_t get_file_size(FILE *file);
-const char *get_padded_output_file(void);
+const char *write_padded_output_file(const char *input_file_path);
 
-#endif // MD5
+#endif // MD5_
 
 #ifdef MD5_IMPLEMENTATION
 
@@ -86,12 +103,68 @@ void reverse_uint8(uint8_t *arr, size_t arr_size)
 
 void change_endian(uint32_t *hex_input)
 {
-  uint8_t asd[4] = {(*hex_input >> 8*0) & 0xFF,
+  uint8_t arr[4] = {(*hex_input >> 8*0) & 0xFF,
 		    (*hex_input >> 8*1) & 0xFF,
 		    (*hex_input >> 8*2) & 0xFF,
 		    (*hex_input >> 8*3) & 0xFF};
-  reverse_uint8(asd, 4);
-  memcpy(hex_input, asd, 4);
+  reverse_uint8(arr, 4);
+  memcpy(hex_input, arr, 4);
+}
+
+const char *get_message_digest(FILE *file)
+{
+  
+  uint64_t file_size = get_file_size(file);
+  int32_t data[16];
+ 
+  while ((uint64_t) ftell(file) != file_size) {
+    fseek(file, 0, SEEK_CUR);
+    fread(&data, sizeof(data), 1, file);
+    
+    uint32_t a = a0;
+    uint32_t b = b0;
+    uint32_t c = c0;
+    uint32_t d = d0;
+
+    for (size_t i = 0; i < 64; ++i) {
+      uint32_t func = get_non_linear_func(b, c, d, i);
+      size_t index = get_current_index(i);
+
+      func += a + key_constant[i] + data[index];
+      a = d;
+      d = c;
+      c = b;
+      b += left_rotate(func, shift_amount[i]);
+    }
+
+    a0 += a;
+    b0 += b;
+    c0 += c;
+    d0 += d;
+  }
+
+  change_endian(&a0);
+  change_endian(&b0);
+  change_endian(&c0);
+  change_endian(&d0);
+
+  char *digest_str = (char *) malloc(sizeof(char) * DIGEST_SIZE * 2);
+  sprintf(digest_str, "%x%x%x%x", a0, b0, c0, d0);
+  return digest_str;
+}
+
+const char *md5(const char *file_path)
+{
+  const char *input_file_path = write_padded_output_file(file_path);
+  FILE *file = fopen(input_file_path, "rb");
+  if (file == NULL) {
+    fprintf(stderr, "ERROR: could not open output file %s: %s\n", input_file_path, strerror(errno));
+    exit(1);
+  }
+  
+  const char *digest = get_message_digest(file);
+
+  return digest;
 }
 
 uint64_t get_file_size(FILE *file)
@@ -110,16 +183,15 @@ uint64_t get_file_size(FILE *file)
   return file_size;
 }
 
-const char *get_padded_output_file(void)
+const char *write_padded_output_file(const char *input_file_path)
 {
-  const char *input_file_path = "input";
   FILE *input_file = fopen(input_file_path, "rb");
   if (input_file == NULL) {
     fprintf(stderr, "ERROR: could not open output file %s: %s\n", input_file_path, strerror(errno));
     exit(1);
   }
 
-  const char *output_file_path = "msg";
+  const char *output_file_path = "padded_input";
   FILE *output_file = fopen(output_file_path, "wb");
   if (output_file == NULL) {
     fprintf(stderr, "ERROR: could not open output file %s: %s\n", output_file_path, strerror(errno));
