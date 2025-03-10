@@ -10,3 +10,9 @@ bitmap/*.bmp
 # Ignore the input and msg files in md5
 md5/padded_input
 md5/md5
+
+# Ignore the build.sh
+**/build.sh
+
+# Ignore the binary file from combinations
+/combinations/combs
